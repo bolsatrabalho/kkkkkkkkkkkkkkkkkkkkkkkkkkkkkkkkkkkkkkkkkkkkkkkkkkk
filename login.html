@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Login - Bolsistas UESPI</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+.container {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  width: 300px;
+  text-align: center;
+}
+input {
+  width: 100%;
+  padding: 8px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+button {
+  background: #0057b8;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 100%;
+}
+button:hover {
+  background: #00449b;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>Acesso ao Sistema</h2>
+  <p>Digite seu e-mail institucional:</p>
+  <input type="email" id="email" placeholder="exemplo@uespi.br" required>
+  <button onclick="entrar()">Entrar</button>
+</div>
+
+<script>
+function entrar() {
+  const email = document.getElementById("email").value.trim().toLowerCase();
+  if (!email) {
+    alert("Digite seu e-mail para continuar");
+    return;
+  }
+
+  // Redireciona para a tabela com o e-mail na URL
+  location.href = `tabela.html?email=${encodeURIComponent(email)}`;
+}
+</script>
+</body>
+</html>
