@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Frequência de Bolsistas</title>
+
+<style>
+body{font-family:Arial;background:#f4f6f8;padding:20px}
+.container{background:#fff;padding:20px;border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{border:1px solid #ccc;padding:5px;text-align:center}
+th{background:#eee}
+input,select{width:100%;font-size:12px}
+button{padding:6px 10px;border:none;border-radius:4px;cursor:pointer}
+.admin{background:#0057b8;color:#fff}
+.coord{background:#2e7d32;color:#fff}
+.topo{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<div class="topo">
+  <h3 id="perfil"></h3>
+  <button onclick="logout()">Sair</button>
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Campus</th>
+<th>Nome</th>
+<th>Matrícula</th>
+<th>Setor</th>
+<th>Início</th>
+<th>Fim</th>
+<th>Email Coordenador</th>
+<th>Jan</th><th>Fev</th><th>Mar</th><th>Abr</th>
+<th>Mai</th><th>Jun</th><th>Jul</th><th>Ago</th>
+<th>Set</th><th>Out</th><th>Nov</th><th>Dez</th>
+<th>Justificativa</th>
+<th>Arquivo</th>
+<th>Ações</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+
+</div>
+
+<script>
+const URL_APPS = "https://script.google.com/macros/s/AKfycbycqg2niZb6vbpivPYLLnTCfeIxbNQz-RJJxFNgmPtoJoMBU9DPjMExwYkC1we6Qugu/exec";
+const EMAIL_ADMIN = "bolsatrabalho@prex.uespi.br";
+const MESES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+
+const params = new URLSearchParams(location.search);
+const email = (params.get("email") || "").toLowerCase().trim();
+
+if(!email){
+  alert("Acesso inválido");
+  location.href="login.html";
+}
+
+const tipo = email === EMAIL_ADMIN ? "admin" : "coordenador";
+document.getElementById("perfil").innerText =
+`Usuário: ${email} | ${tipo.toUpperCase()}`;
+
+let bolsistas = [];
+
+fetch(`${URL_APPS}?acao=listar&email=${encodeURIComponent(email)}`)
+.then(r=>r.json())
+.then(r=>{
+  bolsistas = r.dados || [];
+  render();
+});
+
+function render(){
+  const tb = document.getElementById("tbody");
+  tb.innerHTML = "";
+
+  bolsistas.forEach((b,i)=>{
+    const tr = document.createElement("tr");
+
+    function input(v,edit=true,type="text"){
+      return `<input type="${type}" value="${v||""}" ${edit?"":"readonly"}>`;
+    }
+
+    tr.innerHTML = `
+<td>${input(b["Campus"],tipo==="admin")}</td>
+<td>${input(b["Nome do bolsista"],tipo==="admin")}</td>
+<td>${input(b["Matrícula"],false)}</td>
+<td>${input(b["Setor"],tipo==="admin")}</td>
+<td>${input(b["Inicio"],tipo==="admin","date")}</td>
+<td>${input(b["Fim"],tipo==="admin","date")}</td>
+<td>${input(b["email do coordenador"],tipo==="admin")}</td>
+
+${MESES.map(m=>`
+<td>
+<select>
+<option value=""></option>
+<option value="SIM" ${b[m]==="SIM"?"selected":""}>SIM</option>
+<option value="NÃO" ${b[m]==="NÃO"?"selected":""}>NÃO</option>
+</select>
+</td>
+`).join("")}
+
+<td>${input(b["Justificativa"])}</td>
+
+<td>
+<input type="file" onchange="upload(event,${i})">
+${b["Arquivo"]?`<br><a href="${b["Arquivo"]}" target="_blank">Ver</a>`:""}
+</td>
+
+<td>
+<button class="${tipo==="admin"?"admin":"coord"}" onclick="salvar(${i})">
+💾 Salvar
+</button>
+</td>
+`;
+
+    tb.appendChild(tr);
+  });
+}
+
+function salvar(i){
+  const tr = document.getElementById("tbody").children[i];
+  const campos = tr.querySelectorAll("input,select");
+
+  let d = {
+    "Campus": campos[0].value,
+    "Nome do bolsista": campos[1].value,
+    "Matrícula": campos[2].value,
+    "Setor": campos[3].value,
+    "Inicio": campos[4].value,
+    "Fim": campos[5].value,
+    "email do coordenador": campos[6].value,
+    "Justificativa": campos[19].value
+  };
+
+  MESES.forEach((m,j)=> d[m] = campos[7+j].value);
+
+  Object.assign(d, bolsistas[i]);
+
+  fetch(URL_APPS,{
+    method:"POST",
+    body: JSON.stringify(d)
+  })
+  .then(r=>r.json())
+  .then(()=> alert("Dados salvos com sucesso"));
+}
+
+function upload(e,i){
+  const f = e.target.files[0];
+  if(!f) return;
+
+  const r = new FileReader();
+  r.onload = ()=>{
+    bolsistas[i].arquivoBase64 = r.result.split(",")[1];
+    bolsistas[i].nomeArquivo = f.name;
+    bolsistas[i].tipoArquivo = f.type;
+  };
+  r.readAsDataURL(f);
+}
+
+function logout(){
+  location.href="login.html";
+}
+</script>
+</body>
+</html>
